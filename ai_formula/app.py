@@ -1,27 +1,26 @@
 from flask import Flask, request, jsonify, render_template
-from sympy import symbols, Eq, solve, simplify
+from flask_cors import CORS
+from sympy import symbols, Eq, solve, simplify, latex
 from sympy.parsing.sympy_parser import parse_expr
 import re
-from flask_cors import CORS        # ✅ import CORS
-
-
-
-# ✅ Enable CORS only for your frontend domain
 
 app = Flask(__name__)
-CORS(app, origins=["https://formula0.netlify.app"])
+CORS(app)  # ✅ Enable Cross-Origin for frontend JS requests
 
 def rearrange_equation(equation: str, target: str):
     try:
+        # Basic validation
         if not equation or "=" not in equation:
-            return {"error": "Equation must contain '=' sign."}, 400
+            return {"error": "Equation must contain an '=' sign."}, 400
 
         if not re.match(r"^[A-Za-z0-9_\+\-\*/\^\(\)=\. ]+$", equation):
             return {"error": "Invalid characters in equation."}, 400
 
+        # Prepare for Sympy parsing
         equation = equation.replace("^", "**").replace(" ", "")
         left, right = equation.split("=")
 
+        # Detect all variables
         all_symbols = set(re.findall(r"[a-zA-Z_]+", equation))
         if target not in all_symbols:
             return {"error": f"'{target}' not found in equation."}, 400
@@ -46,7 +45,11 @@ def rearrange_equation(equation: str, target: str):
             return {"error": f"No solution found for '{target}'."}, 400
 
         simplified = simplify(sol[0])
-        return {"result": f"{target} = {simplified}"}, 200
+
+        # ✅ Return LaTeX version for direct MathJax rendering
+        latex_result = latex(Eq(target_symbol, simplified))
+
+        return {"result": latex_result}, 200
 
     except Exception as e:
         return {"error": f"Unexpected server error: {str(e)}"}, 500
@@ -55,6 +58,7 @@ def rearrange_equation(equation: str, target: str):
 @app.route("/")
 def home():
     return render_template("index.html")
+
 
 @app.route("/rearrange", methods=["POST"])
 def rearrange():
@@ -74,4 +78,3 @@ def rearrange():
 
 if __name__ == "__main__":
     app.run(debug=True)
-
