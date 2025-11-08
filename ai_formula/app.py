@@ -2,8 +2,14 @@ from flask import Flask, request, jsonify, render_template
 from sympy import symbols, Eq, solve, simplify
 from sympy.parsing.sympy_parser import parse_expr
 import re
+from flask_cors import CORS        # ✅ import CORS
+
+
+
+# ✅ Enable CORS only for your frontend domain
 
 app = Flask(__name__)
+CORS(app, origins=["https://formula0.netlify.app"])
 
 def rearrange_equation(equation: str, target: str):
     try:
@@ -68,3 +74,4 @@ def rearrange():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
